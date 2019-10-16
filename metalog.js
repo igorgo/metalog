@@ -191,11 +191,13 @@ class Logger extends events.EventEmitter {
     }
     const stream = this.stream;
     if (!stream || stream.destroyed || stream.closed) {
+      this.active = false;
       this.emit('close');
       return;
     }
     this.flush(err => {
       if (err) {
+        this.active = false;
         this.emit('close');
         return;
       }
@@ -213,7 +215,7 @@ class Logger extends events.EventEmitter {
             return;
           }
           if (stats.size > 0) return;
-          fs.unlink(this.file, err => {
+          fs.unlink(fileName, err => {
             process.stdout.write(`${err}\n`);
           });
         });
