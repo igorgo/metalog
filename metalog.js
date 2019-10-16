@@ -7,6 +7,7 @@ const { WritableFileStream } = require('metastreams');
 const concolor = require('concolor');
 
 const DAY_MILLISECONDS = common.duration('1d');
+const HOUR_MILLISECONDS = common.duration('1h');
 
 const LOG_TYPES = [
   'system',
@@ -53,6 +54,15 @@ const logTypes = types => {
   let type;
   for (type of types) flags[type] = true;
   return flags;
+};
+
+const makeFileName = (path = '', node = 'N0', date = new Date()) => {
+  const pad2 = n => (n < 10 ? '0' + n : '' + n);
+  return `${path}/${date.getUTCFullYear()}-${pad2(
+    date.getUTCMonth() + 1
+  )}-${pad2(date.getUTCDate())}_${pad2(date.getUTCHours())}-${pad2(
+    date.getUTCMinutes()
+  )}_${node}.log`;
 };
 
 const normalizeStack = stack => stack.replace(/\s+at\s+/g, '\n\t');
@@ -149,18 +159,13 @@ class Logger extends events.EventEmitter {
       process.nextTick(() => this.emit('open'));
       return;
     }
-    const date = common.nowDate();
-    this.file = `${this.path}/${date}-${this.node}.log`;
-    const now = new Date();
-    const nextDate = new Date();
-    nextDate.setUTCHours(0, 0, 0, 0);
-    const nextReopen = nextDate - now + DAY_MILLISECONDS;
+    this.file = makeFileName(this.path, this.node);
     this.reopenTimer = setTimeout(() => {
       this.once('close', () => {
         this.open();
       });
       this.close();
-    }, nextReopen);
+    }, HOUR_MILLISECONDS);
     if (this.keepDays) this.rotate();
     this.stream = new WritableFileStream(this.file, this.options);
     this.flushTimer = setInterval(() => {
@@ -175,16 +180,25 @@ class Logger extends events.EventEmitter {
   }
 
   close() {
-    if (!this.active) return;
+    if (!this.active) {
+      this.emit('close');
+      return;
+    }
     if (!this.fsEnabled) {
       this.active = false;
       this.emit('close');
       return;
     }
     const stream = this.stream;
-    if (!stream || stream.destroyed || stream.closed) return;
+    if (!stream || stream.destroyed || stream.closed) {
+      this.emit('close');
+      return;
+    }
     this.flush(err => {
-      if (err) return;
+      if (err) {
+        this.emit('close');
+        return;
+      }
       this.active = false;
       this.stream.end(() => {
         clearInterval(this.flushTimer);
