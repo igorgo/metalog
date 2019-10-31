@@ -13,6 +13,7 @@ const LOG_TYPES = [
   'system',
   'fatal',
   'error',
+  'appError',
   'warn',
   'info',
   'debug',
@@ -25,6 +26,7 @@ const typeColor = concolor({
   system: 'b,white/blue',
   fatal: 'b,yellow/red',
   error: 'black/red',
+  appError: 'black/red',
   warn: 'black/yellow',
   info: 'blue/white',
   debug: 'black/green',
@@ -37,6 +39,7 @@ const textColor = concolor({
   system: 'b,white',
   fatal: 'b,red',
   error: 'red',
+  appError: 'red',
   warn: 'b,yellow',
   info: 'white',
   debug: 'b,green',
@@ -92,6 +95,11 @@ class ApplicationLogger {
   error(message) {
     const msg = normalizeStack(message);
     this.logger.write('error', msg, this.application);
+  }
+
+  appError(message) {
+    const msg = normalizeStack(message);
+    this.logger.write('appError', msg, this.application);
   }
 
   warn(message) {
