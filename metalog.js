@@ -98,7 +98,9 @@ class ApplicationLogger {
   }
 
   appError(message) {
-    const msg = normalizeStack(message);
+    const subst = message.substitutions ? '\n\t' + message.substitutions : '';
+    const msg =
+      normalizeStack(message.stack || '') + '\n\t' + message.code + subst;
     this.logger.write('appError', msg, this.application);
   }
 
