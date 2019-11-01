@@ -98,9 +98,10 @@ class ApplicationLogger {
   }
 
   appError(message) {
-    const subst = message.substitutions ? '\n\t' + message.substitutions : '';
-    const msg =
-      normalizeStack(message.stack || '') + '\n\t' + message.code + subst;
+    let msg = normalizeStack(message.stack || '') + ' code: ' + message.code;
+    if (message.substitutions) {
+      msg += ' substitutions: ' + JSON.stringify(message.substitutions);
+    }
     this.logger.write('appError', msg, this.application);
   }
 
